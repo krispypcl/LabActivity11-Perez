@@ -6,7 +6,7 @@
 
 {{-- Everything below goes into the layout's @yield('content') --}}
 @section('content')
-    {{-- Filter form: GET request so ?q= and ?category= appear in the URL.
+    {{-- Filter form: GET request so ?q=, ?category= (and ?tag=) appear in the URL.
          Stacked on mobile (flex-col), side by side from sm: upward. --}}
     <form method="GET" action="{{ route('posts.index') }}"
           class="flex flex-col sm:flex-row gap-2 mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -21,8 +21,19 @@
                 <option value="{{ $c }}" @selected(request('category') === $c)>{{ $c }}</option>
             @endforeach
         </select>
+        {{-- keep the ?tag= filter when searching --}}
+        @if (request('tag'))
+            <input type="hidden" name="tag" value="{{ request('tag') }}">
+        @endif
         <button class="rounded bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2">Filter</button>
     </form>
+
+    @if (request('tag'))
+        <p class="mb-4 text-sm text-gray-600">
+            Showing posts tagged <span class="font-semibold">{{ request('tag') }}</span> ·
+            <a href="{{ route('posts.index', request()->except('tag', 'page')) }}" class="text-emerald-600 hover:underline">clear tag</a>
+        </p>
+    @endif
 
     {{-- Card grid: 1 column on phones, 2 columns from md: upward --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -41,11 +52,18 @@
                 <h2 class="text-lg font-semibold">
                     <a href="{{ route('posts.show', $post->id) }}" class="hover:text-emerald-600">{{ $post->title }}</a>
                 </h2>
-                {{-- Published date (published_at is cast to a date), view count, and author ID
-                     (author name needs a relationship, which is Week 11) --}}
+                {{-- Author name (eager loaded with with('author')) links to the author page --}}
                 <p class="text-sm text-gray-500 mt-1">
-                    {{ $post->published_at?->format('M d, Y') }} · {{ $post->views }} views · Author #{{ $post->author_id }}
+                    By <a href="{{ route('authors.show', $post->author) }}" class="text-emerald-600 hover:underline">{{ $post->author->name }}</a>
+                    · {{ $post->published_at?->format('M d, Y') }} · {{ $post->views }} views · {{ $post->comments_count }} comments
                 </p>
+                {{-- Tag badges; clicking one filters the list with ?tag= --}}
+                <div class="flex flex-wrap gap-1 mt-2">
+                    @foreach ($post->tags as $tag)
+                        <a href="{{ route('posts.index', ['tag' => $tag->name]) }}"
+                           class="text-xs bg-sky-100 text-sky-800 hover:bg-sky-200 px-2 py-0.5 rounded">#{{ $tag->name }}</a>
+                    @endforeach
+                </div>
             </article>
         @empty
             {{-- Shown when the search/filter matches nothing; spans both columns --}}
