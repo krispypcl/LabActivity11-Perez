@@ -13,15 +13,43 @@
 
     {{-- Site header: shows the required site title and links back to the post list --}}
     <header class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:h-16 flex flex-wrap items-center justify-between gap-2">
             <a href="{{ route('posts.index') }}" class="text-lg sm:text-xl font-bold text-emerald-600 hover:text-emerald-700">
                 Barangay Bulletin – Purok Perez
             </a>
+
+            <nav class="flex items-center gap-3 text-sm">
+                {{-- Logged in: name, "New post" (authors only) and logout --}}
+                @auth
+                    {{-- User hasOne Author: residents have no author (null), so only the Kagawad sees "New post" --}}
+                    @if (auth()->user()->author)
+                        <a href="{{ route('posts.create') }}" class="rounded bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5">New post</a>
+                    @endif
+                    <span class="text-gray-600">{{ auth()->user()->name }}</span>
+                    {{-- logout is a POST form with @csrf, not a plain link --}}
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="text-gray-600 hover:text-red-600">Logout</button>
+                    </form>
+                @endauth
+
+                {{-- Guests only see the login link --}}
+                @guest
+                    <a href="{{ route('login') }}" class="text-emerald-600 hover:underline">Login</a>
+                @endguest
+            </nav>
         </div>
     </header>
 
     {{-- Main area: each page's @section('content') is inserted here; flex-grow pushes the footer down --}}
     <main class="flex-grow max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
+        {{-- Flash message set with ->with('status', ...) in a controller, e.g. "Comment posted."; shown once --}}
+        @if (session('status'))
+            <div class="mb-4 rounded border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-2">
+                {{ session('status') }}
+            </div>
+        @endif
+
         @yield('content')
     </main>
 
